@@ -10,7 +10,7 @@ La mezcla dura aproximadamente **2:46**:
 
 - La primera voz entra en 0:04: «Salgo pa’ la calle sin rumbo, como un vagabundo sin rumbo».
 - Después de la voz hay una preparación de dos compases con intro, hats, bajo filtrado y redoble. La base completa entra en 0:14.743.
-- La segunda voz aparece en 0:33.730–0:42.990: «Hoy sí que no hay nada que me pare / Hoy una gatita me llevaré». La base completa regresa en 0:38.730, durante la llamada vocal, y acompaña «Hoy una gatita me llevaré».
+- La segunda voz aparece en 0:33.730–0:42.990: «Hoy sí que no hay nada que me pare / Hoy una gatita me llevaré». La base hace una pausa para la llamada «one, two, C’mon» y regresa en 0:38.970 para acompañar «Hoy una gatita me llevaré».
 
 ## Ejecutar el estudio
 

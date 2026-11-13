@@ -13,7 +13,7 @@ const compasesTransicion = 2 * bpm / 175
 const vozCalleUrl = '/local-audio/salgo-sin-rumbo-frase-completa-v3.wav'
 await loadBuffer(vozCalleUrl, getAudioContext(), 'voz_calle')
 await samples({ voz_calle: vozCalleUrl })
-const vozCortesUrl = '/local-audio/salgo-voz-con-pausa.wav'
+const vozCortesUrl = '/local-audio/salgo-voz-one-two.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
 // Zona marcada: desde el compás 27 hasta aproximadamente el 34 del reloj visual.

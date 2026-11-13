@@ -19,11 +19,12 @@ await samples({ voz_calle_cortes: vozCortesUrl })
 // Zona marcada: desde el compás 27 hasta aproximadamente el 34 del reloj visual.
 const inicioVozCortes = 26
 const compasesVozCortes = 9.26 * bpm / 240
-// El regreso completo coincide con el final de la llamada vocal.
+// El regreso entra con «C’mon!», cinco segundos dentro de esta toma.
+const compasRegresoVoz = inicioVozCortes + 5 * bpm / 240
 const compasesRecorteLlamada = compasesEntradaVoz + compasesVoz + compasesTransicion
-  + 24 * bpm / 175 - inicioVozCortes - compasesVozCortes
-const compasesCorteLlamada = (inicioVozCortes + compasesVozCortes
-  - compasesEntradaVoz - compasesVoz - compasesTransicion - 20 * bpm / 175) * 175 / bpm
+  + 24 * bpm / 175 - compasRegresoVoz
+const compasesCorteLlamada = (compasRegresoVoz
+  - compasesEntradaVoz - compasesVoz - compasesTransicion - 17 * bpm / 175) * 175 / bpm
 const compasesCancion = compasesEntradaVoz + compasesVoz + compasesTransicion
   + 56 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185 - compasesRecorteLlamada
 
@@ -353,9 +354,7 @@ const arreglo = arrange(
   tramo(8, drop, 175),
   tramo(8, stack(drop, eco), 175),
   tramo(1, stack(corte, bajo), 175),
-  tramo(1, stack(corte, bajo.mask("1 0 0 0")).early(1), 175),
-  tramo(2, corte, 175),
-  tramo(compasesCorteLlamada, stack(corte, golpeUno.velocity(.54)), 175),
+  tramo(compasesCorteLlamada, stack(corte, bajo.mask("1 0 0 0")).early(1), 175),
   tramo(16, stack(drop, eco), 180),
   tramo(4, stack(arp, golpeCadaCuatro), 175),
   tramo(4, stack(lead, eco, acordes, golpeCadaCuatro), 175),

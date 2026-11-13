@@ -92,6 +92,7 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
           <select class="fl-select" id="daw-project-select" aria-label="Proyecto Strudel">
             ${projectOptions}
           </select>
+          <a class="daw-back-link" id="daw-vocal-cue" href="${cleanBase}/studio/entrada/" ${currentProject.id === 'salgo-progresiva' ? '' : 'hidden'}>Alinear voz</a>
         </div>
 
         <div class="daw-transport-group">
@@ -577,6 +578,7 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
     loopRange = { enabled: false, start: 0, end: 8 };
     barPage = 0;
     currentProject = nextProj;
+    rootEl.querySelector('#daw-vocal-cue').hidden = nextProj.id !== 'salgo-progresiva';
     currentCode = nextProj.source;
     const nextAnalysis = analyzeStrudelSource(currentCode);
     transportMode = nextAnalysis.hasArrange ? 'SONG' : 'PAT';

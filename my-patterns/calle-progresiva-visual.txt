@@ -17,7 +17,7 @@ const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v2.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
 // La toma sigue corrida. Su llamada termina justo al arrancar el drop.
-const segundosLlamada = 5.24
+const segundosLlamada = 4.93
 const compasSegundoDrop = compasesEntradaVoz + compasesVoz + compasesTransicion + 22 * bpm / 175
 const inicioVozCortes = compasSegundoDrop - segundosLlamada * bpm / 240
 const compasesVozCortes = 9.26 * bpm / 240

@@ -1,0 +1,139 @@
+---
+import source from '../../../../my-patterns/calle-progresiva.txt?raw';
+import { analyzeStrudelSource } from '../../daw/strudel-bridge.mjs';
+const analysis = analyzeStrudelSource(source);
+const drop = analysis.sections.find(({ tramoBpm }) => tramoBpm === 180)!;
+const dropSeconds = drop.startBar * 240 / analysis.bpm;
+const marker = Number(source.match(/^const segundosLlamada = (\S+)$/m)?.[1]);
+const sample = source.match(/^const vozCortesUrl = '([^']+)'/m)?.[1];
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alinear entrada con la voz · Strudel Studio</title>
+  </head>
+  <body>
+    <main data-marker={marker} data-drop={dropSeconds}>
+      <a href={`${base}/studio/?v=salgo-progresiva`}>← Strudel Studio</a>
+      <h1>Alinear entrada con la voz</h1>
+      <p>Escucha la toma sola. Marca «one show» sobre la onda. El clic indica dónde caería el bombo.</p>
+      <audio id="vocal" controls preload="metadata" src={`${base}${sample}`}></audio>
+      <canvas id="wave" width="960" height="160" aria-label="Onda de la voz. También puedes ajustar el marcador con el control de segundos."></canvas>
+      <div class="controls">
+        <label>Segundo de la voz <input id="cue" type="number" min="0.001" step=".01" value={marker} /></label>
+        <button id="play" type="button">Probar voz y clic</button>
+        <button id="mark" type="button">Marcar posición del audio</button>
+      </div>
+      <p id="summary" aria-live="polite"></p>
+      <p>Aplica el marcador a las dos versiones del arreglo con este comando.</p>
+      <code id="command"></code>
+      <p>La mezcla exportada usa el marcador aplicado. El control de arriba sirve para probar la voz antes de aplicarlo.</p>
+      <audio controls preload="metadata" src={`${base}/preview-audio/salgo-progresiva-dos-voces.mp3#t=${Math.floor(dropSeconds - 2)}`}></audio>
+    </main>
+    <script>
+      const main = document.querySelector('main')!;
+      const audio = document.querySelector<HTMLAudioElement>('#vocal')!;
+      const canvas = document.querySelector<HTMLCanvasElement>('#wave')!;
+      const cue = document.querySelector<HTMLInputElement>('#cue')!;
+      const summary = document.querySelector('#summary')!;
+      const command = document.querySelector('#command')!;
+      const ctx = canvas.getContext('2d')!;
+      const drop = Number(main.dataset.drop);
+      let peaks: Float32Array | undefined;
+      let decodedVocal: AudioBuffer | undefined;
+      let previewContext: AudioContext | undefined;
+      let previewVoice: AudioBufferSourceNode | undefined;
+      let previewClick: OscillatorNode | undefined;
+
+      function draw() {
+        const seconds = cue.valueAsNumber;
+        const valid = seconds > 0 && (!Number.isFinite(audio.duration) || seconds < audio.duration);
+        summary.textContent = valid ? `Voz en ${seconds.toFixed(3)} s · Bombo en ${drop.toFixed(3)} s de la mezcla` : 'Marca un punto dentro de la toma.';
+        command.textContent = valid ? `node scripts/set-salgo-cue.mjs ${seconds}` : '';
+        ctx.fillStyle = '#151922';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (!peaks || !Number.isFinite(audio.duration)) return;
+        const middle = canvas.height / 2;
+        ctx.fillStyle = '#79dbbd';
+        peaks.forEach((peak, x) => ctx.fillRect(x, middle * (1 - peak), 1, Math.max(1, 2 * middle * peak)));
+        if (valid) {
+          ctx.fillStyle = '#ff934f';
+          ctx.fillRect(seconds / audio.duration * canvas.width, 0, 2, canvas.height);
+        }
+      }
+      function setCue(seconds: number) {
+        if (!Number.isFinite(audio.duration)) return;
+        cue.value = Math.max(.001, Math.min(audio.duration - .001, seconds)).toFixed(3);
+        draw();
+      }
+      canvas.addEventListener('click', (event) => {
+        const bounds = canvas.getBoundingClientRect();
+        setCue((event.clientX - bounds.left) / bounds.width * audio.duration);
+      });
+      cue.addEventListener('input', draw);
+      audio.addEventListener('loadedmetadata', () => { cue.max = String(audio.duration - .001); draw(); });
+      document.querySelector('#mark')!.addEventListener('click', () => setCue(audio.currentTime));
+      const play = document.querySelector<HTMLButtonElement>('#play')!;
+      play.disabled = true;
+      play.addEventListener('click', async () => {
+        if (!command.textContent || !decodedVocal) return;
+        audio.pause();
+        previewVoice?.stop();
+        previewClick?.stop();
+        const context = previewContext ??= new AudioContext();
+        await context.resume();
+        const offset = Math.max(0, cue.valueAsNumber - 1);
+        const start = context.currentTime + .05;
+        const clickTime = start + cue.valueAsNumber - offset;
+        const voice = context.createBufferSource();
+        voice.buffer = decodedVocal;
+        voice.connect(context.destination);
+        voice.start(start, offset, Math.min(2, decodedVocal.duration - offset));
+        const click = context.createOscillator();
+        const level = context.createGain();
+        click.frequency.value = 900;
+        level.gain.setValueAtTime(.17, clickTime);
+        level.gain.exponentialRampToValueAtTime(.001, clickTime + .08);
+        click.connect(level).connect(context.destination);
+        click.start(clickTime);
+        click.stop(clickTime + .08);
+        previewVoice = voice;
+        previewClick = click;
+        voice.onended = () => { if (previewVoice === voice) previewVoice = undefined; };
+        click.onended = () => { if (previewClick === click) previewClick = undefined; };
+      });
+      draw();
+      fetch(audio.src).then((response) => {
+        if (!response.ok) throw new Error('No se pudo abrir el WAV');
+        return response.arrayBuffer();
+      }).then((buffer) => new OfflineAudioContext(1, 1, 44100).decodeAudioData(buffer)).then((decoded) => {
+        decodedVocal = decoded;
+        play.disabled = false;
+        peaks = new Float32Array(canvas.width);
+        for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
+          const data = decoded.getChannelData(channel);
+          for (let x = 0; x < peaks.length; x++) {
+            const start = Math.floor(x * data.length / peaks.length);
+            const end = Math.floor((x + 1) * data.length / peaks.length);
+            for (let i = start; i < end; i++) peaks[x] = Math.max(peaks[x], Math.abs(data[i]));
+          }
+        }
+        draw();
+      }).catch(() => { canvas.hidden = true; });
+    </script>
+    <style>
+      body { margin: 0; background: #11141a; color: #ecedf2; font: 16px system-ui, sans-serif; }
+      main { max-width: 960px; margin: 3rem auto; padding: 0 1rem; }
+      a { color: #79dbbd; }
+      audio, canvas { display: block; width: 100%; margin: 1rem 0; }
+      canvas { cursor: crosshair; }
+      .controls { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
+      input, button { background: #222733; border: 1px solid #535965; border-radius: 4px; color: inherit; padding: .5rem; font: inherit; }
+      input { width: 5rem; }
+      button { cursor: pointer; }
+      code { color: #ffb789; overflow-wrap: anywhere; }
+    </style>
+  </body>
+</html>

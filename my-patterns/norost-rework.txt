@@ -1,0 +1,146 @@
+// @title Pa Que La Pases Bien (Noro$t Rework)
+const bpm = 157
+setcpm(bpm / 4)
+
+// @session motor
+// Bombo de club. El barrido baja rápido al principio y sostiene el subgrave hasta el contratiempo.
+const caida = [[0, 320], [.020, 210], [.034, 137], [.054, 81], [.086, 61], [.122, 49], [.167, 43]]
+const golpe = [[.005, .38], [.024, .56], [.047, .89], [.086, .98], [.125, .93], [.176, .85], [.202, 0]]
+
+registerSound('bombo_club', (inicio, _, terminado) => {
+  const audio = getAudioContext()
+  const seno = audio.createOscillator()
+  const nivel = audio.createGain()
+  seno.frequency.setValueAtTime(caida[0][1], inicio)
+  for (const [segundos, hz] of caida.slice(1)) {
+    seno.frequency.exponentialRampToValueAtTime(hz, inicio + segundos)
+  }
+  nivel.gain.setValueAtTime(0, inicio)
+  for (const [segundos, amplitud] of golpe) {
+    nivel.gain.linearRampToValueAtTime(amplitud, inicio + segundos)
+  }
+  seno.connect(nivel)
+  seno.addEventListener('ended', () => {
+    seno.disconnect()
+    nivel.disconnect()
+    terminado()
+  }, { once: true })
+  seno.start(inicio)
+  seno.stop(inicio + golpe.at(-1)[0])
+  return { node: nivel, stop: (tiempo) => seno.stop(tiempo) }
+}, { type: 'synth' })
+
+// @session bombo
+const bombo = stack(
+  s("bombo_club*4").gain(.94),
+  freq("150*4").s("sawtooth").penv(16).pattack(.001).pdecay(.042).psustain(0)
+    .hpf(140).lpf(3100).attack(.002).decay(.055).sustain(0).gain(1.3),
+  freq("305*4").s("square").penv(10).pattack(.001).pdecay(.036).psustain(0)
+    .hpf(300).lpf(2600).attack(.005).decay(.035).sustain(0).gain(1.03),
+  s("white*4").hpf(1600).lpf(9700).attack(.001).decay(.032).sustain(0).gain(.43)
+)
+
+// @session bajo
+// El tercer y quinto armónicos dan el rebote nasal del bajo. El filtro los apaga durante cada nota.
+const bajo = note("<[~@16 g1@13 ~@3]*4 [~@16 f#1@13 ~@3]*4 [~@16 b1@13 ~@3]*4 [~@16 b1@13 ~@3]*4>")
+  .s("user").partials([.86, .73, 1, .29, .68, .21, .31, .10])
+  .lpf(102).lpenv(2.6).fanchor(0).lpattack(.002).lpdecay(.148).lpsustain(0)
+  .attack(.006).decay(.074).sustain(.89).release(.017).gain(2.9)
+
+// @session percusion
+const hats = stack(
+  s("[~ ~ white@2]*4").hpf(5900).lpf(11500)
+    .attack(.003).decay(.132).sustain(.02).release(.017).gain(.91),
+  s("[white ~ white ~]*4").hpf(7900)
+    .attack(.001).decay(.017).sustain(0).gain(".20 .13")
+)
+const clap = s("~ [white white@7] ~ [white white@7]").hpf(1650).lpf(6700)
+  .attack(.002).decay(.055).sustain(0).room(.09).gain(.17)
+const perc = freq("[~ ~ ~ 237] [~ 327 ~ ~] [~ ~ ~ 218] [~ 237 ~ 316]")
+  .s("triangle").penv(8).pattack(.001).pdecay(.025).psustain(0)
+  .decay(.05).sustain(0).pan(".43 .57").gain(.10)
+
+// @session arpegio
+// Sierra centrada. La entrada repite cuatro notas, con más presencia en las dos agudas.
+const arp = note("[b4 d5 f#5 b5]*4").s("sawtooth").gain("[.48 .56 .69 .73]*4")
+  .lpf(9400).attack(.030).decay(.058).sustain(.81).release(.019)
+const intro = stack(bombo, bajo, hats, arp)
+const cierreIntro = stack(bombo.mask("1 0 1 1"), hats, arp, perc)
+
+// @session frase
+const gancho = note("<[g5@2 ~@2 g5@2 ~@10] [f#5@2 e5@2 d5@2 ~@10] [b4@3 ~ b4@2 ~@10] [b4@3 ~ b4@3 ~@9]>")
+const respuesta = note("<[~@8 g5@6 a5@2] [~@8 d5@2 e5@2 d5@2 a4 ~] [~@14 a#4 b4] [~@14 a#4 g5]>")
+const sierra = (patron) => patron.s("sawtooth").hpf(300).lpf(5800)
+  .attack(.013).decay(.12).sustain(.67).release(.025).gain(.65)
+const lead = sierra(gancho)
+const eco = sierra(respuesta).gain(.40)
+
+// La pista vocal se guarda en el servidor local de Strudel.
+const vocalLocal = '/local-audio/voz-norost.wav'
+let vocalDisponible = false
+if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+  try {
+    await loadBuffer(vocalLocal, getAudioContext(), 'voz_norost')
+    await samples({ voz_norost: vocalLocal })
+    vocalDisponible = true
+  } catch (error) {
+    console.warn('No se encontró la pista vocal local.', error)
+  }
+}
+
+// Los cortes de un pulso conservan la posición de la voz y responden al transporte.
+const voz = vocalDisponible
+  ? s("voz_norost").slow(128).chop(512).clip(1)
+    .attack(0).decay(0).sustain(1).release(0).gain(.98)
+  : silence
+const acordes = note("<[g3,b3,d4,f#4] [f#3,a#3,c#4,e4] [b3,d4,f#4,a4] [b3,d4,f#4,a4]>")
+  .s("supersaw").unison(3).detune(.15).hpf(240).lpf(1450)
+  .attack(.14).decay(.38).sustain(.58).release(.22).room(.24).gain(.24)
+const teclas = note("<[g2,b3,d4] [e2,g3,b3] [[b2,d4,f#4] [e3,g4,b4]] [[b2,d4,f#4] [e3,g4,b4]]>")
+  .s("sawtooth").lpf(2600).lpenv(1.1).lpdecay(.10)
+  .attack(.018).decay(.16).sustain(.17).release(.13).room(.18).gain(.32)
+
+// @session arreglo
+const base = stack(bombo, bajo, hats)
+const drop = stack(base, lead, clap, perc)
+const golpeUno = bombo.mask("1 0 0 0")
+const golpeCadaCuatro = golpeUno.mask("<1 0 0 0>")
+const golpeAlterno = golpeUno.mask("<1 0>")
+const corte = stack(lead, acordes, clap, hats.velocity(.76))
+const puente = stack(teclas, acordes, hats.velocity(.74))
+const bajoMedio = bajo.mask("0 1 0 1")
+const rebote = bajo.mask("1 0 1 0").hpf(127).velocity(.78)
+const segundoDrop = stack(bombo, bajoMedio, rebote, hats, lead, eco, clap, perc)
+
+const arreglo = arrange(
+  [7, intro],
+  [1, cierreIntro],
+  [8, drop],
+  [8, stack(drop, eco)],
+  [1, stack(corte, bajo)],
+  [1, stack(corte, bajo.mask("1 0 0 0")).early(1)],
+  [2, corte],
+  [1, stack(corte, golpeUno.velocity(.54))],
+  [2, corte],
+  [1, stack(corte, golpeUno)],
+  [16, stack(drop, eco)],
+  [4, stack(arp, golpeCadaCuatro)],
+  [4, stack(lead, eco, acordes, golpeCadaCuatro)],
+  [8, stack(puente, golpeCadaCuatro)],
+  [4, stack(puente, bajo, golpeAlterno)],
+  [4, stack(puente, golpeAlterno, clap)],
+  [4, stack(puente, golpeUno, clap)],
+  [2, stack(puente, bombo.mask("1 0 1 0"), clap)],
+  [1, stack(puente, bombo, hats)],
+  [1, stack(arp, clap)],
+  [15, segundoDrop],
+  [1, stack(bajoMedio, rebote, lead, clap).early(15)],
+  [15, segundoDrop],
+  [1, segundoDrop.mask("1 1 0 1").early(15)],
+  [7, stack(base, lead)],
+  [1, stack(bombo.mask("1 1 0 0"), bajo, hats).early(7)],
+  [7, stack(base, lead)],
+  [1, stack(bajo, clap).early(7)]
+).postgain(.86)
+
+stack(arreglo, voz)

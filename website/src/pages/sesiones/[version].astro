@@ -1,0 +1,8 @@
+---
+import StudioPage from '../../session/StudioPage.astro';
+import { sessionCatalog } from '../../session/catalog.mjs';
+export function getStaticPaths() {
+  return sessionCatalog.map(({ id }) => ({ params: { version: id } }));
+}
+---
+<StudioPage version={Astro.params.version} />

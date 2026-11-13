@@ -1,0 +1,8 @@
+---
+import { code2hash } from '@strudel/core';
+import pattern from '../../../my-patterns/norost-rework.txt?raw';
+
+const repl = new URL(import.meta.env.BASE_URL, Astro.url);
+repl.hash = code2hash(pattern);
+return Astro.redirect(repl.pathname + repl.hash);
+---

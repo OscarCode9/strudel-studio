@@ -1,0 +1,121 @@
+// @title Salgo Pa' la Calle — Bounce edit
+// Intro recortado del MP3 del usuario; base nueva con el motor de la versión 1.
+const bpm = 157
+setcpm(bpm / 4)
+const introUrl = '/local-audio/salgo-intro-loop.wav'
+await loadBuffer(introUrl, getAudioContext(), 'calle_intro')
+await samples({ calle_intro: introUrl })
+
+// @session motor
+const caida = [[0, 320], [.020, 210], [.034, 137], [.054, 81], [.086, 61], [.122, 49], [.167, 43]]
+const golpe = [[.005, .38], [.024, .56], [.047, .89], [.086, .98], [.125, .93], [.176, .85], [.202, 0]]
+registerSound('bombo_calle', (inicio, _, terminado) => {
+  const audio = getAudioContext()
+  const seno = audio.createOscillator()
+  const nivel = audio.createGain()
+  seno.frequency.setValueAtTime(caida[0][1], inicio)
+  for (const [segundos, hz] of caida.slice(1)) {
+    seno.frequency.exponentialRampToValueAtTime(hz, inicio + segundos)
+  }
+  nivel.gain.setValueAtTime(0, inicio)
+  for (const [segundos, amplitud] of golpe) {
+    nivel.gain.linearRampToValueAtTime(amplitud, inicio + segundos)
+  }
+  seno.connect(nivel)
+  seno.addEventListener('ended', () => {
+    seno.disconnect()
+    nivel.disconnect()
+    terminado()
+  }, { once: true })
+  seno.start(inicio)
+  seno.stop(inicio + golpe.at(-1)[0])
+  return { node: nivel, stop: (tiempo) => seno.stop(tiempo) }
+}, { type: 'synth' })
+
+// @session bombo
+const bombo = stack(
+  s("bombo_calle*4").gain(.86),
+  freq("150*4").s("sawtooth").penv(16).pattack(.001).pdecay(.042).psustain(0)
+    .hpf(140).lpf(3100).attack(.002).decay(.055).sustain(0).gain(.91),
+  freq("305*4").s("square").penv(10).pattack(.001).pdecay(.036).psustain(0)
+    .hpf(300).lpf(2600).attack(.005).decay(.035).sustain(0).gain(.72),
+  s("white*4").hpf(1600).lpf(9700).attack(.001).decay(.032).sustain(0).gain(.27)
+)
+
+// @session bajo
+// Bbm → Ab en el primer compás; Ebm en el segundo. Contratiempo de la versión 1.
+const notasBajo = note("<[[~@16 bb1@13 ~@3]*2 [~@16 ab1@13 ~@3]*2] [~@16 eb2@13 ~@3]*4>")
+const bajo = notasBajo.s("user").partials([.86, .73, 1, .29, .68, .21, .31, .10])
+  .lpf(104).lpenv(2.5).fanchor(0).lpattack(.002).lpdecay(.145).lpsustain(0)
+  .attack(.006).decay(.074).sustain(.87).release(.017).gain(2.1)
+
+// @session percusion
+const hats = stack(
+  s("[~ ~ white@2]*4").hpf(5900).lpf(11500)
+    .attack(.003).decay(.116).sustain(.02).release(.017).gain(.61),
+  s("[white ~ white ~]*4").hpf(7900)
+    .attack(.001).decay(.017).sustain(0).gain(".14 .09")
+)
+const clap = s("~ [white white@7] ~ [white white@7]").hpf(1450).lpf(6900)
+  .attack(.002).decay(.063).sustain(0).room(.10).gain(.30)
+const perc = freq("[~ ~ 237 ~] [~ 327 ~ ~] [~ ~ 218 ~] [~ 237 ~ 316]")
+  .s("triangle").penv(8).pattack(.001).pdecay(.025).psustain(0)
+  .decay(.05).sustain(0).pan(".38 .62").gain(.16)
+const redoble = s("<[~ white]*2 [~ white]*4 [~ white]*8 [white*16]>")
+  .hpf(1300).lpf(6200).decay(.055).sustain(0).gain("<.12 .16 .21 .28>")
+
+// @session intro
+// Cuatro compases del intro del archivo, estirados sin cambiar el tono.
+// Cortes de un pulso para conservar la posición al adelantar en el REPL.
+const muestra = s("calle_intro").slow(4).chop(16).clip(1)
+  .attack(0).decay(0).sustain(1).release(.002).gain(.88)
+const recuerdo = muestra.hpf(320).lpf(7200).gain(.48)
+const recorte = recuerdo.mask("1 0 1 0").room(.08)
+
+// @session arpegio
+const notasArp = note("<[[bb4 db5 f5 bb5]*2 [ab4 c5 eb5 ab5]*2] [eb4 gb4 bb4 eb5]*4>")
+const arp = notasArp.s("sawtooth").hpf(450).lpf(7400)
+  .attack(.016).decay(.065).sustain(.45).release(.024)
+  .gain("[.19 .23 .28 .32]*4").room(.09)
+
+// @session gancho
+const frase = note("<[bb5@2 ~@2 f5@2 db5@2 ab5@2 ~@2 eb5@2 c5@2] [gb5@2 ~@2 eb5@2 ~@2 bb4@3 ~ gb5@2 eb5@2]>")
+const lead = frase.s("sawtooth").hpf(320).lpf(5700)
+  .attack(.012).decay(.12).sustain(.58).release(.033).gain(.43)
+const respuesta = note("<[~@8 eb5@2 c5@2 ab4@2 ~@2] [~@8 gb5@2 f5@2 eb5@2 ~@2]>")
+  .s("triangle").hpf(400).lpf(4200).attack(.013).decay(.11)
+  .sustain(.34).release(.07).delay(.16).delaytime(45 / bpm).delayfeedback(.23).gain(.28)
+const campana = note("<[bb4@3 ~ f5@3 ~ ab4@3 ~ eb5@3 ~] [eb5@3 ~ bb4@3 ~ gb5@3 ~ f5@3 ~]>")
+  .s("sine").hpf(320).attack(.003).decay(.23).sustain(0).release(.10)
+  .delay(.20).delaytime(45 / bpm).delayfeedback(.28).room(.14).gain(.36)
+
+// @session arreglo
+const base = stack(bombo, bajo, hats, clap)
+const drop = stack(base, lead, perc)
+const grande = stack(drop, respuesta, arp.velocity(.72))
+const roto = stack(bombo.mask("1 0 1 0"), bajo, clap, hats.velocity(.74), recorte, campana)
+const puente = stack(recuerdo, campana, hats.velocity(.48))
+const golpeUno = bombo.mask("1 0 0 0")
+const arreglo = arrange(
+  [4, muestra],
+  [4, stack(muestra, bombo.mask("1 0 1 0").velocity(.65), hats.velocity(.55))],
+  [7, drop],
+  [1, stack(base, lead, redoble).early(7)],
+  [7, stack(drop, recorte)],
+  [1, stack(clap, recorte, respuesta).early(15)],
+  [8, roto],
+  [15, grande],
+  [1, stack(bajo, lead, clap).early(15)],
+  [8, stack(puente, golpeUno.velocity(.65))],
+  [4, stack(puente, bajo, bombo.mask("1 0 1 0"))],
+  [3, stack(puente, redoble, bombo)],
+  [1, stack(recorte, redoble).early(7)],
+  [15, stack(grande, recorte)],
+  [1, stack(bajo, lead, clap).early(15)],
+  [7, stack(grande, campana)],
+  [1, stack(base, lead, redoble).early(23)],
+  [7, stack(base, arp, recuerdo.velocity(.65))],
+  [1, stack(golpeUno, campana).early(7)]
+).postgain(.52)
+
+arreglo

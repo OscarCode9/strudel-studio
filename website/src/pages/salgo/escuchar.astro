@@ -1,0 +1,105 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Escuchar · Salgo Pa' la Calle</title>
+  </head>
+  <body>
+    <main>
+      <nav>
+        <a href={`${base}/salgo/`}>← Volver a la sesión</a>
+        <a href={`${base}/salgo/repl/`}>Abrir en REPL ↗</a>
+      </nav>
+      <p class="eyebrow">INTRO RECREADO · 90 → 175 BPM</p>
+      <h1>Salgo Pa' la Calle</h1>
+      <p>El mismo timbre y motivo en toda la melodía a 175 BPM. Bajos desde 0:08; cuando salen, regresa el intro.</p>
+      <label for="mix">Mezcla completa</label>
+      <select id="mix">
+        <option value={`${base}/preview-audio/salgo-175bpm-v7.mp3`} data-bpm="175">Nueva · 175 BPM (velocidad del remix · regreso del intro)</option>
+        <option value={`${base}/preview-audio/salgo-mismo-motivo-v6.mp3`} data-bpm="157">Anterior · 157 BPM (Revisión 6 · mismo motivo)</option>
+      </select>
+      <audio id="track" controls preload="metadata" src={`${base}/preview-audio/salgo-175bpm-v7.mp3`}></audio>
+      <div class="actions">
+        <button id="back">−5 segundos</button><button id="forward">+5 segundos</button>
+        <button id="start">Marcar inicio</button><button id="end">Marcar fin</button>
+      </div>
+      <p id="selection" role="status">Fragmento: sin marcar</p>
+      <div class="chapters" aria-label="Partes de la canción">
+        <button data-offset="-1">Intro</button><button data-offset="0">Entrada de bajos · 0:08</button>
+        <button data-offset="8">Groove</button><button data-offset="16">Gancho</button>
+        <button data-offset="18">Ritmo quebrado</button><button data-offset="24">Regresa el intro</button>
+        <button data-after-intro="0">Vuelven los bajos</button><button data-after-intro="8">Drop final</button>
+      </div>
+      <p><a id="download" href={`${base}/preview-audio/salgo-175bpm-v7.mp3`} download>Descargar MP3</a> · <a href={`${base}/norost/escuchar/`}>Escuchar Pa Que La Pases Bien ↗</a></p>
+      <h2>El intro, por separado</h2>
+      <label for="reference">Recorte de referencia (90 BPM)</label>
+      <audio id="reference" controls preload="metadata" src={`${base}/preview-audio/salgo-intro-reference-8.mp3`}></audio>
+      <label for="intro">Recreación sintetizada · misma velocidad</label>
+      <audio id="intro" controls preload="metadata" src={`${base}/preview-audio/salgo-intro-medido-v4.mp3`}></audio>
+    </main>
+    <script>
+      const track = document.querySelector<HTMLAudioElement>('#track')!;
+      const mix = document.querySelector<HTMLSelectElement>('#mix')!;
+      const download = document.querySelector<HTMLAnchorElement>('#download')!;
+      const selection = document.querySelector('#selection')!;
+      let start: number | undefined, end: number | undefined;
+      const currentBpm = () => Number(mix.selectedOptions[0]?.dataset.bpm || 175);
+      const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+      function showSelection() {
+        selection.textContent = `Fragmento: ${start === undefined ? '…' : time(start)} → ${end === undefined ? '…' : time(end)}${start !== undefined && end !== undefined && end < start ? ' · el fin debe ir después del inicio' : ''}`;
+      }
+      document.querySelector('#back')!.addEventListener('click', () => { track.currentTime = Math.max(0, track.currentTime - 5); });
+      document.querySelector('#forward')!.addEventListener('click', () => { if (Number.isFinite(track.duration)) track.currentTime = Math.min(track.duration, track.currentTime + 5); });
+      document.querySelector('#start')!.addEventListener('click', () => { start = track.currentTime; showSelection(); });
+      document.querySelector('#end')!.addEventListener('click', () => { end = track.currentTime; showSelection(); });
+      mix.addEventListener('change', () => {
+        const position = track.currentTime;
+        const playing = !track.paused;
+        track.src = mix.value;
+        download.href = mix.value;
+        track.addEventListener('loadedmetadata', () => {
+          track.currentTime = Math.min(position, track.duration);
+          if (playing) track.play().catch(() => {});
+        }, { once: true });
+        track.load();
+      });
+      document.querySelectorAll<HTMLButtonElement>('[data-offset]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const offset = Number(button.dataset.offset);
+          track.currentTime = offset < 0 ? 0 : 8 + offset * 240 / currentBpm();
+          track.play().catch(() => {});
+        });
+      });
+      document.querySelectorAll<HTMLButtonElement>('[data-after-intro]').forEach((button) => {
+        button.addEventListener('click', () => {
+          track.currentTime = 16 + (24 + Number(button.dataset.afterIntro)) * 240 / currentBpm();
+          track.play().catch(() => {});
+        });
+      });
+      document.querySelectorAll('audio').forEach((audio) => audio.addEventListener('play', () => {
+        document.querySelectorAll('audio').forEach((other) => { if (other !== audio) other.pause(); });
+      }));
+    </script>
+    <style>
+      :global(body) { margin: 0; background: #151412; color: #f0ede6; font: 16px/1.5 system-ui, sans-serif; }
+      main { max-width: 760px; padding: 40px 24px 64px; margin: auto; }
+      nav { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
+      a { color: #f0b85b; } h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.15; margin: 10px 0; }
+      h2 { margin-top: 40px; font-size: 21px; } p { color: #bdb8ac; }
+      .eyebrow { margin-top: 36px; font-size: 12px; letter-spacing: .14em; color: #f0b85b; }
+      label { display: block; margin-top: 22px; margin-bottom: 8px; }
+      select { width: 100%; background: #26251f; color: #f0ede6; border: 1px solid #5a584e; padding: 12px; border-radius: 8px; font: inherit; }
+      audio { display: block; width: 100%; margin: 16px 0; }
+      .actions, .chapters { display: flex; gap: 8px; flex-wrap: wrap; }
+      .chapters { margin-top: 24px; }
+      button { background: #f0b85b; color: #151412; padding: 10px 14px; border: 0; border-radius: 7px; cursor: pointer; font: inherit; }
+      .chapters button { background: #302f28; color: #f0ede6; }
+      button:hover { background: #f7ce86; color: #151412; } :focus-visible { outline: 3px solid #f0b85b; outline-offset: 3px; }
+      #selection { font-variant-numeric: tabular-nums; }
+    </style>
+  </body>
+</html>

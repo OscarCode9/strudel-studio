@@ -1,0 +1,126 @@
+---
+import './studio.css';
+import { getScore } from './score.mjs';
+import { getSession, sessionCatalog } from './catalog.mjs';
+
+const { version } = Astro.props;
+const { bpm, scenes, buildEnd } = getScore(version);
+const session = getSession(version);
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const isSalgo = session.family === 'salgo';
+const mp3Path = isSalgo ? `${base}/salgo/escuchar/` : `${base}/norost/escuchar/`;
+const dawPath = `${base}/studio/?v=${encodeURIComponent(version)}`;
+const replPath = `${base}/sesiones/${version}/repl/`;
+const pageTitle = `${session.title} · ${session.label}`;
+const trackTitle = session.title;
+const trackSubtitle = `${session.label} · ${bpm} BPM`;
+const editorFile = `${version}.strudel`;
+const currentIndex = sessionCatalog.findIndex((entry) => entry.id === version);
+const previous = sessionCatalog[currentIndex - 1];
+const next = sessionCatalog[currentIndex + 1];
+const buildSeconds = Math.round(buildEnd * 240 / bpm);
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#151412" />
+    <meta name="description" content="Todas las versiones de nuestras rolas, construidas con escritura automática y síntesis en vivo." />
+    <title>{pageTitle}</title>
+  </head>
+  <body data-version={version}>
+    <div class="studio">
+      <header class="studio-nav">
+        <div class="studio-track">
+          <h1>{trackTitle}</h1>
+          <span>{trackSubtitle}</span>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          {(version === 'salgo' || version === '2') && <a class="studio-link" href={mp3Path}>Reproductor MP3 ↗</a>}
+          <a class="studio-link" href={dawPath}>Estudio FL <span aria-hidden="true">↗</span></a>
+          <a class="studio-link" href={replPath}>Abrir en REPL <span aria-hidden="true">↗</span></a>
+        </div>
+      </header>
+
+      <main>
+        <section class="studio-console" aria-label="Sesión interactiva">
+          <nav class="studio-versions studio-library" aria-label="Biblioteca de rolas">
+            <label for="studio-song">ROLA / VERSIÓN</label>
+            <select id="studio-song">
+              {['paque', 'salgo'].map((family) => (
+                <optgroup label={family === 'paque' ? 'Pa Que La Pases Bien' : "Salgo Pa' la Calle"}>
+                  {sessionCatalog.filter((entry) => entry.family === family).map((entry) => (
+                    <option value={`${base}/sesiones/${entry.id}/`} selected={entry.id === version}>{entry.title} · {entry.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <span class="studio-library-count">{currentIndex + 1} / {sessionCatalog.length}</span>
+            {previous && <a aria-label="Versión anterior" href={`${base}/sesiones/${previous.id}/`}>←</a>}
+            {next && <a aria-label="Versión siguiente" href={`${base}/sesiones/${next.id}/`}>→</a>}
+          </nav>
+          <div class="studio-deck">
+            <div class="studio-transport">
+              <button class="studio-primary" type="button" id="studio-play" disabled>
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path class="studio-icon-play" d="M7 4l14 8-14 8z" /><path class="studio-icon-pause" d="M6 4h4v16H6zm8 0h4v16h-4z" /></svg>
+                <span id="studio-play-label">Empezar sesión</span>
+              </button>
+              <button class="studio-reset" type="button" id="studio-reset" aria-label="Volver al inicio" title="Volver al inicio" disabled>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 4v6h6M4.9 10a7.5 7.5 0 1 1-.3 4.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </button>
+            </div>
+            <div class="studio-scope" aria-label="Forma de onda en vivo">
+              <svg viewBox="0 0 360 50" preserveAspectRatio="none" aria-hidden="true">
+                <path class="studio-scope-grid" d="M0 25H360 M60 0V50 M120 0V50 M180 0V50 M240 0V50 M300 0V50" />
+                <path id="studio-wave" class="studio-wave" d="M0 25H360" />
+              </svg>
+            </div>
+            <div class="studio-clock" id="studio-clock" aria-label="Tiempo de construcción">
+              <span id="studio-time">0:00</span><span class="studio-clock-total" id="studio-time-total"> / {Math.floor(buildSeconds / 60)}:{String(buildSeconds % 60).padStart(2, '0')}</span>
+            </div>
+          </div>
+          <progress id="studio-progress" class="studio-progress" value="0" max="1" aria-label="Progreso de construcción"></progress>
+
+          <div class="studio-workspace">
+            <section class="studio-editor" aria-label="Código que se está escribiendo">
+              <header class="studio-editor-bar">
+                <div><span class="studio-file-icon" aria-hidden="true">⌘</span> {editorFile}</div>
+                <span class="studio-state" id="studio-state" role="status"><i></i><span id="studio-state-label">EN ESPERA</span></span>
+              </header>
+              <div class="studio-code-scroll" id="studio-code-scroll" tabindex="0" aria-label="Código de la escena">
+                <pre><code id="studio-code"><span class="studio-code-line"><span><span class="studio-comment">// Pulsa «Empezar sesión» para escribir la primera línea.</span><span class="studio-cursor" aria-hidden="true"></span></span></span></code></pre>
+              </div>
+              <footer class="studio-note">
+                <span class="studio-note-index" id="studio-note-index" aria-hidden="true">—</span>
+                <span id="studio-note">{scenes.length} escenas. Puedes pausar la escritura o saltar a cualquier prueba.</span>
+              </footer>
+            </section>
+
+            <aside class="studio-cues" aria-label="Escenas de la sesión">
+              <header class="studio-cues-bar"><span>CUADERNO DE SESIÓN</span><span>01—{String(scenes.length).padStart(2, '0')}</span></header>
+              <ol class="studio-cue-list">
+                {scenes.map(({ index, title }) => (
+                  <li><button type="button" class="studio-cue" data-scene={index} disabled>
+                    <span class="studio-cue-number">{String(index + 1).padStart(2, '0')}</span>
+                    <span class="studio-cue-title">{title}</span>
+                    <span class="studio-cue-icon" aria-hidden="true">↗</span>
+                  </button></li>
+                ))}
+              </ol>
+            </aside>
+          </div>
+        </section>
+        <footer class="studio-footer">
+          <span><i></i> SÍNTESIS EN VIVO <span class="studio-slash">/</span> WEB AUDIO</span>
+          <span>HECHO EN <strong>STRUDEL</strong></span>
+        </footer>
+      </main>
+    </div>
+    <script>
+      import './studio.mjs';
+    </script>
+  </body>
+</html>

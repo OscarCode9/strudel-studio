@@ -1,0 +1,17 @@
+---
+import { code2hash } from '@strudel/core';
+import { sessionCatalog, getSession } from '../../../session/catalog.mjs';
+export function getStaticPaths() {
+  return sessionCatalog.map(({ id }) => ({ params: { version: id } }));
+}
+const target = `${import.meta.env.BASE_URL}#${code2hash(getSession(Astro.params.version).source)}`;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Abriendo la versión en Strudel…</title>
+    <script is:inline define:vars={{ target }}>window.location.replace(target);</script>
+  </head>
+  <body></body>
+</html>

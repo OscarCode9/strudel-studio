@@ -1,0 +1,35 @@
+---
+import './daw.css';
+
+const { defaultVersion = '1' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#11141a" />
+    <meta
+      name="description"
+      content="Estudio interactivo estilo FL Studio con sincronización bidireccional en vivo a código real de Strudel."
+    />
+    <title>Strudel Studio · Salgo Pa’ la Calle</title>
+  </head>
+  <body>
+    <div id="daw-root" data-base={base} data-default-version={defaultVersion}></div>
+    <script>
+      import { mountDawApp } from './daw-app.mjs';
+
+      const root = document.getElementById('daw-root');
+      if (root) {
+        const base = root.dataset.base ?? '';
+        const params = new URLSearchParams(window.location.search);
+        const initialVersion = params.get('v') || root.dataset.defaultVersion || '1';
+        mountDawApp(root, { base, initialVersion });
+      }
+    </script>
+  </body>
+</html>

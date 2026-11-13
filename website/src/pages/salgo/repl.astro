@@ -1,0 +1,18 @@
+---
+import { code2hash } from '@strudel/core';
+import pattern from '../../../../my-patterns/calle-visual-completa.txt?raw';
+
+const base = import.meta.env.BASE_URL;
+const target = `${base}#${code2hash(pattern)}`;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Abriendo Strudel REPL…</title>
+    <script is:inline define:vars={{ target }}>
+      window.location.replace(target);
+    </script>
+  </head>
+  <body></body>
+</html>

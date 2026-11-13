@@ -1,0 +1,14 @@
+---
+import { code2hash } from '@strudel/core';
+import pattern from '../../../../my-patterns/calle-estructura-v1-visual.txt?raw';
+const target = `${import.meta.env.BASE_URL}#${code2hash(pattern)}`;
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Abriendo Salgo · Estructura V1…</title>
+    <script is:inline define:vars={{ target }}>window.location.replace(target);</script>
+  </head>
+  <body></body>
+</html>

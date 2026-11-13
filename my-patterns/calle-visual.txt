@@ -1,0 +1,27 @@
+// @title Salgo Pa' la Calle — 175 BPM / Vista de notas
+// Play: misma canción, con notas animadas por instrumento.
+// El sintetizador y el arreglo completo están en /salgo/codigo/
+const { cargarCancion } = await import('/src/session/calle-score.mjs')
+const cancion = await cargarCancion()
+
+// MELODÍA · el mismo timbre del intro
+const melodia = cancion
+  .filterValues(v => v.s === 'cuerda_calle')
+  .color('cyan')
+  ._punchcard({ width: 760, height: 130 })
+
+// BAJO Y SUBGRAVE · rebote a contratiempo
+const graves = cancion
+  .filterValues(v => v.s === 'user' || v.s === 'sine' || v.s === 'grave_intro_calle')
+  .color('cyan')
+  ._punchcard({ width: 760, height: 90 })
+
+// BOMBO, HATS Y PERCUSIÓN
+const ritmo = cancion
+  .filterValues(v => !['cuerda_calle', 'user', 'sine', 'grave_intro_calle'].includes(v.s))
+  .color('cyan')
+  ._punchcard({ width: 760, height: 70 })
+
+stack(melodia, graves, ritmo)
+  .theme('bluescreen')
+  .fontSize(18)

@@ -1,0 +1,93 @@
+// @title Pa Que La Pases Bien (Noro$t Rework) — Versión 2
+const bpm = 157
+setcpm(bpm / 4)
+await samples('https://strudel.b-cdn.net/piano.json', 'https://strudel.b-cdn.net/piano/')
+
+// @session pulso
+// Un golpe redondo con un ataque seco. El bajo tiene su propio espacio entre golpes.
+const kick = stack(
+  freq("48*4").s("sbd").penv(35).pdecay(.058).decay(.182).gain(.33),
+  freq("49*4").s("sine").penv(24).pattack(.001).pdecay(.071).psustain(0)
+    .attack(.013).decay(.16).sustain(0).gain(1.45),
+  s("white*4").hpf(1900).lpf(7700).decay(.017).sustain(0).gain(.16)
+)
+const kickRoto = kick.mask("1 0 1 0")
+
+// @session bajo
+const figura = note("<[~ b1 b1 b2 ~ b1 ~ f#2 ~ b1 b1 b2 ~ a1 ~ f#1] [~ g1 g1 d2 ~ g1 ~ b1 ~ g1 g1 d2 ~ a1 ~ f#1] [~ d2 d2 a2 ~ d2 ~ f#2 ~ d2 d2 a2 ~ e2 ~ a1] [~ a1 a1 e2 ~ a1 ~ c#2 ~ a1 a1 e2 ~ g1 ~ a1]>")
+const sub = figura.s("sine").lpf(155).attack(.004).decay(.10)
+  .sustain(.46).release(.019).gain(.92)
+const acid = figura.s("sawtooth").hpf(112).lpf(270).lpq(7).lpenv(2.5)
+  .fanchor(0).lpattack(.003).lpdecay(.09).lpsustain(.17)
+  .attack(.004).decay(.073).sustain(.37).release(.016).gain(.78)
+
+// @session bateria
+const hats = s("[~ white ~ white]*4").hpf(6700).lpf(12200)
+  .attack(.002).decay(.042).sustain(0).gain("[.25 .64 .22 .47]*2")
+const clap = s("~ [white white@7] ~ [white white@7]").hpf(1270).lpf(6300)
+  .decay(.062).sustain(0).orbit(3).room(.19).roomsize(.8).gain(.57)
+const cortes = freq("[~ ~ 221 ~] [~ 176 ~ 260] [~ ~ 197 ~] [~ 176 ~ 330]")
+  .s("triangle").penv(8).pattack(.002).pdecay(.03).psustain(0)
+  .attack(.002).decay(.07).sustain(0).pan(".37 .63").gain(.14)
+const redoble = s("<[~ white]*2 [~ white]*4 [~ white]*8 [white*16]>")
+  .hpf(820).lpf(5900).decay(.057).sustain(0).gain("<.16 .20 .30 .43>")
+
+// @session armonia
+// Bm7 · Gmaj7 · D(add9) · Asus2. Inversiones cercanas, sin saltos de octava.
+const progresion = note("<[b3,d4,f#4,a4] [b3,d4,f#4,g4] [a3,d4,e4,f#4] [a3,b3,e4]>")
+const pad = progresion.s("piano").hpf(140).lpf(6500)
+  .attack(.003).release(.22).clip(.94).velocity("<.76 .69 .78 .71>")
+  .orbit(2).room(.16).roomsize(1.1).gain(.62)
+const pulsos = progresion.struct("~ x ~ x").s("piano")
+  .hpf(220).lpf(5200).attack(.003).release(.13).clip(.80)
+  .velocity(".72 .62").orbit(2).room(.12).gain(.38)
+
+// @session arpegio
+const destellos = note("<[b4 ~ f#5 c#6 ~ d6 a5 ~ f#5 ~ d5 f#5 ~ b5 ~ c#6] [g4 ~ d5 a5 ~ b5 f#5 ~ d5 ~ b4 d5 ~ f#5 ~ a5] [d5 ~ a5 e6 ~ f#6 c#6 ~ a5 ~ f#5 a5 ~ d6 ~ e6] [a4 ~ e5 b5 ~ c#6 g5 ~ e5 ~ b4 e5 ~ a5 ~ b5]>")
+const arp = destellos.s("sawtooth").hpf(400).lpf(2400).lpenv(1.6).lpdecay(.08)
+  .attack(.008).decay(.09).sustain(.20).release(.054).pan(".36 .64")
+  .orbit(4).delay(.32).delaytime(45 / bpm).delayfeedback(.31).room(.20).gain(.50)
+const contramelodia = note("<[~@2 f#5@2 e5@2 d5@2] [b4@3 ~@5] [a5@2 ~ f#5@2 e5@3] [e5@2 ~ c#5@2 b4@3]>")
+  .s("triangle").hpf(360).attack(.037).decay(.22).sustain(.45).release(.16)
+  .orbit(4).delay(.20).room(.22).gain(.35)
+
+// @session voz
+const vocalLocal = '/local-audio/voz-norost.wav'
+let vocalDisponible = false
+if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+  try {
+    await loadBuffer(vocalLocal, getAudioContext(), 'voz_norost')
+    await samples({ voz_norost: vocalLocal })
+    vocalDisponible = true
+  } catch (error) {
+    console.warn('No se encontró la pista vocal local.', error)
+  }
+}
+
+const voz = vocalDisponible
+  ? s("voz_norost").slow(128).chop(512).clip(1)
+    .attack(0).decay(0).sustain(1).release(0).gain(.98)
+  : silence
+
+// @session arreglo
+const drop = stack(kick, sub, acid, hats, clap, arp)
+const dropGrande = stack(drop, pulsos, contramelodia)
+const rotura = stack(kickRoto, sub, acid, clap, cortes, pulsos, arp)
+const puente = stack(pad, contramelodia, cortes)
+const arreglo = arrange(
+  [4, stack(pad, arp.velocity(.57), kickRoto)],
+  [4, stack(kick, sub, hats, arp)],
+  [16, drop],
+  [8, stack(puente, clap.velocity(.55))],
+  [16, dropGrande],
+  [8, puente],
+  [8, stack(kickRoto, pulsos, hats.velocity(.65), clap, arp)],
+  [8, stack(puente, sub.velocity(.60), redoble)],
+  [8, stack(pad, arp, redoble, kickRoto)],
+  [16, dropGrande],
+  [16, rotura],
+  [12, stack(dropGrande, pad)],
+  [4, stack(pad, arp.velocity(.62), kickRoto)]
+).postgain(1.07)
+
+stack(arreglo, voz)

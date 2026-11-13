@@ -1,0 +1,80 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Escuchar · Pa Que La Pases Bien</title>
+  </head>
+  <body>
+    <main>
+      <a href={`${base}/norost/sesion/2/`}>← Volver a la sesión</a>
+      <p><a href={`${base}/salgo/`}>Nueva rola: Salgo Pa' la Calle ↗</a></p>
+      <p class="eyebrow">NORO$T REWORK · VERSIÓN 2</p>
+      <h1>Pa Que La Pases Bien</h1>
+      <p>Adelanta con la barra y marca el fragmento que quieres comentar.</p>
+      <label for="mix">Mezcla completa</label>
+      <select id="mix">
+        <option value={`${base}/preview-audio/pa-que-la-pases-bien-v2-piano.mp3`}>Nueva · piano natural</option>
+        <option value={`${base}/preview-audio/pa-que-la-pases-bien-v2.mp3`}>Anterior · acordes de sintetizador</option>
+      </select>
+      <audio id="track" controls preload="metadata" src={`${base}/preview-audio/pa-que-la-pases-bien-v2-piano.mp3`}></audio>
+      <div class="actions">
+        <button id="back">−5 segundos</button><button id="forward">+5 segundos</button>
+        <button id="start">Marcar inicio</button><button id="end">Marcar fin</button>
+      </div>
+      <p id="selection" role="status">Fragmento: sin marcar</p>
+      <h2>Escuchar los sonidos solos</h2>
+      <label for="piano">Piano nuevo · acordes y pulsos</label>
+      <audio id="piano" controls preload="metadata" src={`${base}/preview-audio/piano-natural.mp3`}></audio>
+      <label for="before">Acordes anteriores · sintetizador</label>
+      <audio id="before" controls preload="metadata" src={`${base}/preview-audio/acordes-sostenidos.mp3`}></audio>
+      <label for="arp">Arpegio · notas rápidas</label>
+      <audio id="arp" controls preload="metadata" src={`${base}/preview-audio/arpegio.mp3`}></audio>
+      <p class="credit">Piano: Salamander Grand Piano · Alexander Holm · CC BY 3.0.</p>
+    </main>
+    <script>
+      const track = document.querySelector<HTMLAudioElement>('#track')!;
+      const mix = document.querySelector<HTMLSelectElement>('#mix')!;
+      const selection = document.querySelector('#selection')!;
+      let start: number | undefined, end: number | undefined;
+      const time = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
+      function showSelection() {
+        selection.textContent = `Fragmento: ${start === undefined ? '…' : time(start)} → ${end === undefined ? '…' : time(end)}${start !== undefined && end !== undefined && end < start ? ' · el fin debe ir después del inicio' : ''}`;
+      }
+      document.querySelector('#back')!.addEventListener('click', () => { track.currentTime = Math.max(0, track.currentTime - 5); });
+      document.querySelector('#forward')!.addEventListener('click', () => { if (Number.isFinite(track.duration)) track.currentTime = Math.min(track.duration, track.currentTime + 5); });
+      document.querySelector('#start')!.addEventListener('click', () => { start = track.currentTime; showSelection(); });
+      document.querySelector('#end')!.addEventListener('click', () => { end = track.currentTime; showSelection(); });
+      mix.addEventListener('change', () => {
+        const position = track.currentTime;
+        const playing = !track.paused;
+        track.src = mix.value;
+        track.addEventListener('loadedmetadata', () => {
+          track.currentTime = Math.min(position, track.duration);
+          if (playing) track.play().catch(() => {});
+        }, { once: true });
+        track.load();
+      });
+      document.querySelectorAll('audio').forEach((audio) => audio.addEventListener('play', () => {
+        document.querySelectorAll('audio').forEach((other) => { if (other !== audio) other.pause(); });
+      }));
+    </script>
+    <style>
+      :global(body) { margin: 0; background: #151412; color: #f0ede6; font: 16px/1.5 system-ui, sans-serif; }
+      main { max-width: 760px; padding: 40px 24px 64px; margin: auto; }
+      a { color: #d2ddaf; } h1 { font-size: clamp(28px, 6vw, 44px); line-height: 1.15; margin: 10px 0; }
+      h2 { margin-top: 40px; font-size: 21px; } p { color: #bdb8ac; }
+      .eyebrow { margin-top: 36px; font-size: 12px; letter-spacing: .14em; color: #d2ddaf; }
+      label { display: block; margin-top: 22px; margin-bottom: 8px; }
+      select { width: 100%; background: #26251f; color: #f0ede6; border: 1px solid #5a584e; padding: 12px; border-radius: 8px; font: inherit; }
+      audio { display: block; width: 100%; margin: 16px 0; }
+      .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      button { background: #d2ddaf; color: #151412; padding: 10px 14px; border: 0; border-radius: 7px; cursor: pointer; font: inherit; }
+      button:hover { background: #e4edcb; } :focus-visible { outline: 3px solid #ebba68; outline-offset: 3px; }
+      #selection { font-variant-numeric: tabular-nums; } .credit { font-size: 12px; margin-top: 36px; }
+    </style>
+  </body>
+</html>

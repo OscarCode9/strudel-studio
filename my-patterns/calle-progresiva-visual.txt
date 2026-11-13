@@ -13,14 +13,16 @@ const compasesTransicion = 2 * bpm / 175
 const vozCalleUrl = '/local-audio/salgo-sin-rumbo-frase-completa-v3.wav'
 await loadBuffer(vozCalleUrl, getAudioContext(), 'voz_calle')
 await samples({ voz_calle: vozCalleUrl })
-const vozCortesUrl = '/local-audio/salgo-voz-one-two.wav'
+const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v2.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
-// Zona marcada: desde el compás 27 hasta aproximadamente el 34 del reloj visual.
-const inicioVozCortes = 26
-const compasesVozCortes = 13.9274131274 * bpm / 240
+// La toma sigue corrida. Su llamada termina justo al arrancar el drop.
+const segundosLlamada = 5.24
+const compasSegundoDrop = compasesEntradaVoz + compasesVoz + compasesTransicion + 22 * bpm / 175
+const inicioVozCortes = compasSegundoDrop - segundosLlamada * bpm / 240
+const compasesVozCortes = 9.26 * bpm / 240
 const compasesCancion = compasesEntradaVoz + compasesVoz + compasesTransicion
-  + 56 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185
+  + 54 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185
 
 // ESTE ES EL INTRO: las notas y el timbre de Salgo, a 90 BPM durante 8 segundos.
 // La voz entra a 0:04; a 0:12 empieza la preparación y a 0:14.743 cae la base.
@@ -307,10 +309,10 @@ const aire = cuerda(motivo.mask("1 0 0 0")).orbit(7).room(.28).roomsize(2.0).gai
 const bajoRoto = bajo.mask("1 1 0 1").velocity(.93)
 
 // «Hoy sí que no hay nada que me pare / Hoy una gatita me llevaré».
-// Una sola toma, en fragmentos consecutivos para poder escuchar desde el playhead.
+// Una sola toma continua, con la siguiente frase sobre la base.
 const vozCortes = arrange(
   [inicioVozCortes, silence],
-  [compasesVozCortes, s("voz_calle_cortes").slow(compasesVozCortes).chop(32).clip(1)
+  [compasesVozCortes, s("voz_calle_cortes").slow(compasesVozCortes).clip(1)
     .attack(0).decay(0).sustain(1).release(0)],
   [compasesCancion - inicioVozCortes - compasesVozCortes, silence]
 ).s("voz_calle_cortes").gain(1.22).orbit(11).postgain(.46)
@@ -352,8 +354,6 @@ const arreglo = arrange(
   tramo(2, corte, 175),
   tramo(1, stack(corte, golpeUno.velocity(.54)), 175),
   tramo(1, corte, 175),
-  // La llamada vocal queda sola en los dos últimos compases del corte.
-  tramo(2, silence, 175),
   tramo(16, stack(drop, eco), 180),
   tramo(4, stack(arp, golpeCadaCuatro), 175),
   tramo(4, stack(lead, eco, acordes, golpeCadaCuatro), 175),

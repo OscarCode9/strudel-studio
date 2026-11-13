@@ -6,11 +6,11 @@ Estudio musical visual con Playlist, Channel Rack, Piano Roll, Mixer y editor de
 
 [Descargar o escuchar el MP3 final](https://github.com/OscarCode9/strudel-studio/releases/latest/download/salgo-progresiva-dos-voces.mp3)
 
-La mezcla dura aproximadamente **2:55**:
+La mezcla dura aproximadamente **2:52**:
 
 - La primera voz entra en 0:04: «Salgo pa’ la calle sin rumbo, como un vagabundo sin rumbo».
 - Después de la voz hay una preparación de dos compases con intro, hats, bajo filtrado y redoble. La base completa entra en 0:14.743.
-- Las frases del segundo pasaje empiezan en 0:33.73. La llamada queda sola en los dos últimos compases del corte y la base vuelve en 0:47.66.
+- La segunda toma vocal empieza en 0:39.67 y sigue de corrido. La base vuelve en 0:44.91, sin un bloque de silencio.
 
 ## Ejecutar el estudio
 

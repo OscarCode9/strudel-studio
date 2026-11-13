@@ -13,12 +13,12 @@ const compasesTransicion = 2 * bpm / 175
 const vozCalleUrl = '/local-audio/salgo-sin-rumbo-frase-completa-v3.wav'
 await loadBuffer(vozCalleUrl, getAudioContext(), 'voz_calle')
 await samples({ voz_calle: vozCalleUrl })
-const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v1.wav'
+const vozCortesUrl = '/local-audio/salgo-voz-con-pausa.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
 // Zona marcada: desde el compás 27 hasta aproximadamente el 34 del reloj visual.
 const inicioVozCortes = 26
-const compasesVozCortes = 8.78 * bpm / 240
+const compasesVozCortes = 13.9274131274 * bpm / 240
 const compasesCancion = compasesEntradaVoz + compasesVoz + compasesTransicion
   + 56 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185
 

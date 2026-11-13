@@ -10,7 +10,7 @@ La mezcla dura aproximadamente **2:52**:
 
 - La primera voz entra en 0:04: «Salgo pa’ la calle sin rumbo, como un vagabundo sin rumbo».
 - Después de la voz hay una preparación de dos compases con intro, hats, bajo filtrado y redoble. La base completa entra en 0:14.743.
-- La segunda toma vocal empieza en 0:39.67 y sigue de corrido. La base vuelve en 0:44.91, sin un bloque de silencio.
+- La segunda toma vocal empieza en 0:35.20. El regreso de la base en 0:44.91 coincide con el marcador del final del conteo, a 9.714 s de la toma.
 
 ## Ejecutar el estudio
 

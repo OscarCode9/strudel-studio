@@ -13,14 +13,14 @@ const compasesTransicion = 2 * bpm / 175
 const vozCalleUrl = '/local-audio/salgo-sin-rumbo-frase-completa-v3.wav'
 await loadBuffer(vozCalleUrl, getAudioContext(), 'voz_calle')
 await samples({ voz_calle: vozCalleUrl })
-const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v2.wav'
+const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v3.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
-// La toma sigue corrida. Su llamada termina justo al arrancar el drop.
-const segundosLlamada = 4.93
+// El marcador vocal se alinea con el primer bombo del segundo drop.
+const segundosLlamada = 9.714
 const compasSegundoDrop = compasesEntradaVoz + compasesVoz + compasesTransicion + 22 * bpm / 175
 const inicioVozCortes = compasSegundoDrop - segundosLlamada * bpm / 240
-const compasesVozCortes = 9.26 * bpm / 240
+const compasesVozCortes = 9.76 * bpm / 240
 const compasesCancion = compasesEntradaVoz + compasesVoz + compasesTransicion
   + 54 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185
 

@@ -191,7 +191,7 @@ export function createPlaylistView(container, callbacks) {
         </div>
         <div class="pl-scroll" id="pl-scroll-area">
           <div class="pl-canvas" style="width:${timelineWidth}px">
-            <div class="pl-ruler" data-action="seek-ruler" title="Clic para mover playhead · Shift+Clic en sección para Loop">
+            <div class="pl-ruler" data-action="seek-ruler" title="Clic para saltar al compás · Alt+Clic para ubicar un punto exacto">
               ${loopOverlayHtml}
               ${rulerTicks.join('')}
             </div>
@@ -240,7 +240,8 @@ export function createPlaylistView(container, callbacks) {
     if (ruler) {
       const rect = ruler.getBoundingClientRect();
       const relX = Math.max(0, e.clientX - rect.left);
-      const bar = Math.floor(relX / currentState.pxPerBar);
+      const position = relX / currentState.pxPerBar;
+      const bar = e.altKey ? position : Math.floor(position);
       callbacks.onSeek?.(bar);
       return;
     }

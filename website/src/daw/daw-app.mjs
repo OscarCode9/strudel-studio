@@ -84,7 +84,7 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
     <div class="daw-shell">
       <header class="daw-topbar">
         <div class="daw-brand-group">
-          <a class="daw-back-link" href="${cleanBase}/sesiones/salgo-progresiva/" title="Volver a sesiones">← Sesiones</a>
+          <a class="daw-back-link" href="${cleanBase}/sesiones/1/" title="Volver a sesiones">← Sesiones</a>
           <div class="daw-brand">
             <span class="daw-brand-badge">FL</span>
             <span>Strudel Studio</span>
@@ -104,6 +104,7 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
           <button type="button" class="daw-stop-btn" id="daw-stop-btn" aria-label="Detener">■ Stop</button>
           <div class="daw-lcd" aria-label="Posición y tempo">
             <span class="daw-lcd-pos" id="daw-lcd-pos">001:1:01</span>
+            <span id="daw-elapsed" title="Segundos desde el inicio">0.000 s</span>
             <label class="daw-bpm-box">
               <span>BPM</span>
               <button type="button" class="daw-bpm-step" id="daw-bpm-dec" aria-label="Bajar BPM">−</button>
@@ -159,6 +160,8 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
   const playBtn = rootEl.querySelector('#daw-play-btn');
   const stopBtn = rootEl.querySelector('#daw-stop-btn');
   const lcdPosEl = rootEl.querySelector('#daw-lcd-pos');
+  const elapsedEl = rootEl.querySelector('#daw-elapsed');
+  const cueLink = rootEl.querySelector('#daw-vocal-cue');
   const bpmInputEl = rootEl.querySelector('#daw-bpm-input');
   const activeChannelBadgeEl = rootEl.querySelector('#daw-active-channel-badge');
   const projectSelectEl = rootEl.querySelector('#daw-project-select');
@@ -537,6 +540,11 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
   // Playhead 60fps loop
   function updatePlayheadUi(bar, playing) {
     lcdPosEl.textContent = formatBarLcd(bar);
+    const seconds = (bar * 240 / currentAnalysis.bpm).toFixed(3);
+    elapsedEl.textContent = `${seconds} s`;
+    if (!cueLink.hidden && !playing) {
+      cueLink.href = `${cleanBase}/studio/entrada/?t=${seconds}`;
+    }
     playlist.updatePlayhead(bar);
     channelRack.updateStepIndicator(bar, playing);
     pianoRoll.updatePlayhead(bar, playing);
@@ -578,7 +586,7 @@ export async function mountDawApp(rootEl, { base = '', initialVersion = '1' } = 
     loopRange = { enabled: false, start: 0, end: 8 };
     barPage = 0;
     currentProject = nextProj;
-    rootEl.querySelector('#daw-vocal-cue').hidden = nextProj.id !== 'salgo-progresiva';
+    cueLink.hidden = nextProj.id !== 'salgo-progresiva';
     currentCode = nextProj.source;
     const nextAnalysis = analyzeStrudelSource(currentCode);
     transportMode = nextAnalysis.hasArrange ? 'SONG' : 'PAT';

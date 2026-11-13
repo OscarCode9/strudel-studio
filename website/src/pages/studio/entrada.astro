@@ -18,7 +18,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <main data-marker={marker} data-drop={dropSeconds}>
       <a href={`${base}/studio/?v=salgo-progresiva`}>← Strudel Studio</a>
       <h1>Alinear entrada con la voz</h1>
-      <p>Escucha la toma sola. Marca «one show» sobre la onda. El clic indica dónde caería el bombo.</p>
+      <p>Escucha la toma sola y marca el punto de entrada sobre la onda. El clic indica dónde caería el bombo.</p>
       <audio id="vocal" controls preload="metadata" src={`${base}${sample}`}></audio>
       <canvas id="wave" width="960" height="160" aria-label="Onda de la voz. También puedes ajustar el marcador con el control de segundos."></canvas>
       <div class="controls">
@@ -26,6 +26,11 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         <button id="play" type="button">Probar voz y clic</button>
         <button id="mark" type="button">Marcar posición del audio</button>
       </div>
+      <div class="controls">
+        <label>Segundo en la mezcla <input id="mix-time" type="number" min="0" step=".001" /></label>
+        <button id="convert" type="button">Pasar a la onda</button>
+      </div>
+      <p id="conversion" aria-live="polite"></p>
       <p id="summary" aria-live="polite"></p>
       <p>Aplica el marcador a las dos versiones del arreglo con este comando.</p>
       <code id="command"></code>
@@ -37,10 +42,16 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
       const audio = document.querySelector<HTMLAudioElement>('#vocal')!;
       const canvas = document.querySelector<HTMLCanvasElement>('#wave')!;
       const cue = document.querySelector<HTMLInputElement>('#cue')!;
+      const mixTime = document.querySelector<HTMLInputElement>('#mix-time')!;
+      const conversion = document.querySelector('#conversion')!;
       const summary = document.querySelector('#summary')!;
       const command = document.querySelector('#command')!;
       const ctx = canvas.getContext('2d')!;
       const drop = Number(main.dataset.drop);
+      const savedMarker = Number(main.dataset.marker);
+      const vocalStart = drop - savedMarker;
+      const playhead = new URLSearchParams(location.search).get('t');
+      if (playhead !== null && Number.isFinite(Number(playhead))) mixTime.value = playhead;
       let peaks: Float32Array | undefined;
       let decodedVocal: AudioBuffer | undefined;
       let previewContext: AudioContext | undefined;
@@ -73,6 +84,15 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
         setCue((event.clientX - bounds.left) / bounds.width * audio.duration);
       });
       cue.addEventListener('input', draw);
+      document.querySelector('#convert')!.addEventListener('click', () => {
+        const seconds = mixTime.valueAsNumber - vocalStart;
+        if (!Number.isFinite(audio.duration) || !(seconds > 0 && seconds < audio.duration)) {
+          conversion.textContent = 'Ese punto queda fuera de la toma cargada. Revisa el tiempo o amplía el WAV.';
+          return;
+        }
+        setCue(seconds);
+        conversion.textContent = `${mixTime.valueAsNumber.toFixed(3)} s de la mezcla equivalen a ${cue.value} s en el WAV.`;
+      });
       audio.addEventListener('loadedmetadata', () => { cue.max = String(audio.duration - .001); draw(); });
       document.querySelector('#mark')!.addEventListener('click', () => setCue(audio.currentTime));
       const play = document.querySelector<HTMLButtonElement>('#play')!;

@@ -36,6 +36,8 @@ Las dos voces de esta versión están incluidas en `website/public/local-audio/`
 - `website/public/local-audio/`: los dos pasajes de voz de la canción actual.
 - `website/public/preview-audio/salgo-progresiva-dos-voces.mp3`: exportación completa.
 
+[Guía para alinear una entrada con la voz](docs/salgo-alinear-voz.md)
+
 ## Verificar y construir
 
 ```bash

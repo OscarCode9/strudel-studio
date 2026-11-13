@@ -13,20 +13,14 @@ const compasesTransicion = 2 * bpm / 175
 const vozCalleUrl = '/local-audio/salgo-sin-rumbo-frase-completa-v3.wav'
 await loadBuffer(vozCalleUrl, getAudioContext(), 'voz_calle')
 await samples({ voz_calle: vozCalleUrl })
-const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v2.wav'
+const vozCortesUrl = '/local-audio/salgo-hoy-me-pare-gatita-v1.wav'
 await loadBuffer(vozCortesUrl, getAudioContext(), 'voz_calle_cortes')
 await samples({ voz_calle_cortes: vozCortesUrl })
 // Zona marcada: desde el compás 27 hasta aproximadamente el 34 del reloj visual.
 const inicioVozCortes = 26
-const compasesVozCortes = 9.26 * bpm / 240
-// El regreso entra después de «C’mon!», a 5.24 segundos dentro de esta toma.
-const compasRegresoVoz = inicioVozCortes + 5.24 * bpm / 240
-const compasesRecorteLlamada = compasesEntradaVoz + compasesVoz + compasesTransicion
-  + 24 * bpm / 175 - compasRegresoVoz
-const compasesCorteLlamada = (compasRegresoVoz
-  - compasesEntradaVoz - compasesVoz - compasesTransicion - 17 * bpm / 175) * 175 / bpm
+const compasesVozCortes = 8.78 * bpm / 240
 const compasesCancion = compasesEntradaVoz + compasesVoz + compasesTransicion
-  + 56 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185 - compasesRecorteLlamada
+  + 56 * bpm / 175 + 16 * bpm / 180 + 48 * bpm / 185
 
 // ESTE ES EL INTRO: las notas y el timbre de Salgo, a 90 BPM durante 8 segundos.
 // La voz entra a 0:04; a 0:12 empieza la preparación y a 0:14.743 cae la base.
@@ -353,8 +347,13 @@ const arreglo = arrange(
   [compasesTransicion, transicionEntrada],
   tramo(8, drop, 175),
   tramo(8, stack(drop, eco), 175),
-  // La llamada queda sola hasta el golpe de regreso.
-  tramo(1 + compasesCorteLlamada, silence, 175),
+  tramo(1, stack(corte, bajo), 175),
+  tramo(1, stack(corte, bajo.mask("1 0 0 0")).early(1), 175),
+  tramo(2, corte, 175),
+  tramo(1, stack(corte, golpeUno.velocity(.54)), 175),
+  tramo(1, corte, 175),
+  // La llamada vocal queda sola en los dos últimos compases del corte.
+  tramo(2, silence, 175),
   tramo(16, stack(drop, eco), 180),
   tramo(4, stack(arp, golpeCadaCuatro), 175),
   tramo(4, stack(lead, eco, acordes, golpeCadaCuatro), 175),
